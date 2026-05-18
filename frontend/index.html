@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SolarVision — EL Panel Inspection</title>
+<meta name="description" content="AI-powered EL panel defect classification with confidence scores and batch export.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══ LANDING ══ -->
+<div id="landing" class="screen active">
+  <nav>
+    <div class="nav-logo">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="10" y1="16" x2="10" y2="19"/><line x1="1" y1="10" x2="4" y2="10"/><line x1="16" y1="10" x2="19" y2="10"/><line x1="3.5" y1="3.5" x2="5.7" y2="5.7"/><line x1="14.3" y1="14.3" x2="16.5" y2="16.5"/><line x1="16.5" y1="3.5" x2="14.3" y2="5.7"/><line x1="5.7" y1="14.3" x2="3.5" y2="16.5"/></svg>
+      SolarVision
+    </div>
+    <div class="nav-spacer"></div>
+  </nav>
+  <div class="content">
+    <div class="upload-card">
+      <div class="upload-title">EL Panel Inspection</div>
+      <div class="upload-sub">Upload thermal EL scans — the AI model will classify each panel as Damaged, Not Damaged, or Uncertain.</div>
+
+      <div class="drop-zone" id="dropZone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        <p>Drag & drop images here<br>or <strong onclick="document.getElementById('fileIn').click()">choose files</strong> / <strong onclick="document.getElementById('folderIn').click()">select folder</strong></p>
+      </div>
+
+      <div class="file-count" id="fileCount"></div>
+
+      <div class="upload-options">
+        <button class="opt-btn" onclick="document.getElementById('fileIn').click()">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12V4a1 1 0 011-1h4l1.5 2H13a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1z"/></svg>
+          Choose Files
+        </button>
+        <button class="opt-btn" onclick="document.getElementById('folderIn').click()">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 4a1 1 0 011-1h4l1.5 2H14a1 1 0 011 1v6a1 1 0 01-1 1H2a1 1 0 01-1-1V4z"/></svg>
+          Select Folder
+        </button>
+      </div>
+
+      <div class="crop-row">
+        <label for="cropToggle">Auto-crop panel region before analysis</label>
+        <label class="toggle">
+          <input type="checkbox" id="cropToggle">
+          <div class="toggle-track"></div>
+        </label>
+      </div>
+
+      <button class="btn-analyze" id="analyzeBtn" onclick="startAnalysis()" disabled>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+        Analyze Images
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PROCESSING ══ -->
+<div id="processing" class="screen">
+  <nav>
+    <div class="nav-logo">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="10" y1="16" x2="10" y2="19"/><line x1="1" y1="10" x2="4" y2="10"/><line x1="16" y1="10" x2="19" y2="10"/></svg>
+      SolarVision
+    </div>
+  </nav>
+  <div class="content">
+    <div class="spinner"></div>
+    <div class="proc-title">Analyzing Images</div>
+    <div class="proc-sub" id="procMsg">Sending images to AI model…</div>
+    <div class="proc-bar-wrap"><div class="proc-bar" id="procBar"></div></div>
+  </div>
+</div>
+
+<!-- ══ RESULTS ══ -->
+<div id="results" class="screen">
+  <nav>
+    <div class="nav-logo">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="10" y1="16" x2="10" y2="19"/><line x1="1" y1="10" x2="4" y2="10"/><line x1="16" y1="10" x2="19" y2="10"/></svg>
+      SolarVision
+    </div>
+    <div class="nav-spacer"></div>
+    <button class="nav-btn" onclick="goBack()">← New Analysis</button>
+  </nav>
+
+  <div class="disclaimer">
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="6"/><path d="M7 5v3M7 9.5v.5"/></svg>
+    AI results are a support tool only. Always verify findings with a qualified inspector before making operational decisions.
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-val" id="s-total">0</div><div class="stat-lbl">Total</div></div>
+    <div class="stat"><div class="stat-val red" id="s-damaged">0</div><div class="stat-lbl">Damaged</div></div>
+    <div class="stat"><div class="stat-val amber" id="s-uncertain">0</div><div class="stat-lbl">Uncertain</div></div>
+    <div class="stat"><div class="stat-val green" id="s-safe">0</div><div class="stat-lbl">Not Damaged</div></div>
+    <div class="stat"><div class="stat-val" id="s-conf">—</div><div class="stat-lbl">Avg Confidence</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="pills" id="filterPills">
+      <span class="pill active" data-f="all" onclick="setFilter('all',this)">All</span>
+      <span class="pill" data-f="damaged" onclick="setFilter('damaged',this)">Damaged</span>
+      <span class="pill" data-f="safe" onclick="setFilter('safe',this)">Not Damaged</span>
+      <span class="pill" data-f="uncertain" onclick="setFilter('uncertain',this)">Uncertain</span>
+    </div>
+    <div class="tb-sep"></div>
+    <select class="bulk-select" onchange="bulkAction(this)">
+      <option value="">Bulk Select…</option>
+      <option value="all">Select All</option>
+      <option value="damaged">Select All Damaged</option>
+      <option value="safe">Select All Not Damaged</option>
+      <option value="uncertain">Select All Uncertain</option>
+      <option value="none">Clear Selection</option>
+    </select>
+    <div class="tb-spacer"></div>
+    <div class="view-btns">
+      <button class="view-btn active" id="vb-list" onclick="setView('list')">
+        <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2.5h11M1 6.5h11M1 10.5h11"/></svg> List
+      </button>
+      <button class="view-btn" id="vb-grid" onclick="setView('grid')">
+        <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="4" height="4" rx="1"/><rect x="8" y="1" width="4" height="4" rx="1"/><rect x="1" y="8" width="4" height="4" rx="1"/><rect x="8" y="8" width="4" height="4" rx="1"/></svg> Grid
+      </button>
+      <button class="view-btn" id="vb-compact" onclick="setView('compact')">
+        <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2h11M1 5h11M1 8h11M1 11h11"/></svg> Compact
+      </button>
+    </div>
+  </div>
+
+  <div class="view-area">
+    <!-- LIST -->
+    <div class="view-pane active" id="vp-list">
+      <table class="list-table">
+        <thead>
+          <tr>
+            <th style="width:36px"><input type="checkbox" id="selectAll" onchange="toggleAll(this.checked)" style="accent-color:var(--green)"></th>
+            <th style="width:40px">#</th>
+            <th>Filename</th>
+            <th style="width:60px">Preview</th>
+            <th style="width:130px">Result</th>
+            <th style="width:160px">Confidence</th>
+          </tr>
+        </thead>
+        <tbody id="listBody"></tbody>
+      </table>
+    </div>
+
+    <!-- GRID -->
+    <div class="view-pane" id="vp-grid">
+      <div class="grid-view" id="gridBody"></div>
+    </div>
+
+    <!-- COMPACT -->
+    <div class="view-pane" id="vp-compact" style="padding:24px 32px;height:calc(100vh - 260px)">
+      <div class="compact-wrap">
+        <div class="compact-list" id="compactList"></div>
+        <div class="compact-detail" id="compactDetail">
+          <div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 10l-4 4-4-4M12 14V3"/><rect x="3" y="17" width="18" height="4" rx="1"/></svg><p>Select a panel from the list to see details</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="export-bar">
+    <span class="export-lbl">Export results:</span>
+    <div class="export-spacer"></div>
+    <button class="btn-export btn-csv" onclick="doExport('csv')">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="1" width="10" height="12" rx="1.5"/><path d="M4 5h6M4 7.5h6M4 10h4"/></svg>
+      Download CSV
+    </button>
+    <button class="btn-export btn-excel" onclick="doExport('excel')">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="1" width="10" height="12" rx="1.5"/><path d="M4 5h6M4 7.5h4"/></svg>
+      Download Excel Report
+    </button>
+  </div>
+</div>
+
+<!-- ══ BULK BAR ══ -->
+<div class="bulk-bar" id="bulkBar">
+  <span class="bulk-count" id="bulkCount">0 selected</span>
+  <div class="bulk-spacer"></div>
+  <div class="bulk-btns">
+    <button class="btn-bulk safe" onclick="bulkOverride('Not Damaged')">Mark Safe</button>
+    <button class="btn-bulk dmg" onclick="bulkOverride('Damaged')">Mark Damaged</button>
+    <button class="btn-bulk export" onclick="doExport('excel',true)">Export Excel</button>
+    <button class="btn-bulk export" onclick="doExport('csv',true)">Export CSV</button>
+    <button class="btn-bulk clear" onclick="clearSel()">Clear</button>
+  </div>
+</div>
+
+<!-- ══ IMAGE VIEWER MODAL ══ -->
+<div class="modal-bg" id="imgModal" onclick="if(event.target===this)closeImgModal()">
+  <div style="position:relative;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center">
+    <button onclick="closeImgModal()" style="position:absolute;top:-36px;right:0;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">×</button>
+    <img id="imgModalImg" src="" style="max-width:90vw;max-height:85vh;object-fit:contain;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+    <div id="imgModalCaption" style="color:rgba(255,255,255,.7);font-size:12px;font-family:monospace;margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ══ OVERRIDE MODAL ══ -->
+<div class="modal-bg" id="overrideModal">
+  <div class="modal">
+    <div class="modal-title">Override Classification</div>
+    <div class="modal-sub" id="overrideFname">Select new classification:</div>
+    <div class="modal-opts">
+      <div class="modal-opt" data-val="Not Damaged" onclick="selectOpt(this)">
+        <span class="badge safe">Not Damaged</span> Mark as safe panel
+      </div>
+      <div class="modal-opt" data-val="Damaged" onclick="selectOpt(this)">
+        <span class="badge damaged">Damaged</span> Mark as damaged panel
+      </div>
+      <div class="modal-opt" data-val="Uncertain" onclick="selectOpt(this)">
+        <span class="badge uncertain">Uncertain</span> Needs manual review
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm" onclick="confirmOverride()">Apply Override</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden inputs -->
+<input type="file" id="fileIn" multiple accept="image/*" style="display:none" onchange="filesChosen(this.files)">
+<input type="file" id="folderIn" webkitdirectory directory multiple style="display:none" onchange="filesChosen(this.files)">
+
+<script src="app.js"></script>
+</body>
+</html>
