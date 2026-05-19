@@ -21,7 +21,7 @@ from tensorflow.keras.applications.efficientnet import preprocess_input
 # EfficientNetB4 usually uses 380x380
 #
 # If your trained model was EfficientNetB0, keep this:
-IMG_SIZE = (224, 224)
+
 
 # If your model was EfficientNetB3, use:
 IMG_SIZE = (300, 300)
